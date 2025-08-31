@@ -1,4 +1,5 @@
 # React Native
+- https://nomadcoders.co/react-native-for-beginners/
 
 ## 강의 소개
 ![structure](assets/structure.png)
@@ -24,9 +25,8 @@ $ brew update; brew install watchman
 
 -> Expo는 우리의 React Native 코드를 폰으로 전송시켜줌. Expo는 React Native 코드를 실행시켜서 바로 볼 수 있음.
 
-![How does React Native Work](image.png)
+![How does React Native Work](assets/react-native.png)
 
 - React Native가 bridge를 통해 ios, android로 번역해줌.
 
-
-![javascript-to-native](javascript-to-native.png)# react-native-nomad-coders
+![javascript-to-native](assets/javascript-to-native.png)
