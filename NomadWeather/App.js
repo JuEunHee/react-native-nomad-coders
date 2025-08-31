@@ -1,85 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import * as Location from "expo-location";
+import React, { useEffect, useState } from "react";
 import {
-  Dimensions,
-  ScrollView,
-  StyleSheet,
-  Text,
   View,
-} from 'react-native';
-import * as Location from 'expo-location';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+  Text,
+  Dimensions,
+  ActivityIndicator,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import { OPEN_WEATHER_API_KEY } from '@env';
 
 export default function App() {
-  const [location, setLocation] = useState('Loading...');
+  const [city, setCity] = useState("Loading...");
+  const [days, setDays] = useState([]);
   const [ok, setOk] = useState(true);
 
-  const ask = async () => {
-    // 위치 정보 권한 요청
+  const getWeather = async () => {
+    // 카메라 권한 획득
     const { granted } = await Location.requestForegroundPermissionsAsync();
-    
     if (!granted) {
       setOk(false);
     }
 
-    // accuracy: 5 -> 도시 정도의 정확도로 위치 정보를 가져옴
-    const getCurrentLocation = await Location.getCurrentPositionAsync({
-      accuracy: 5
-    });
-    const { latitude, longitude } = getCurrentLocation.coords;
-    const location = await Location.reverseGeocodeAsync({
-      latitude,
-      longitude
-    }, { useGoogleMaps: false });
+    // 현재 위치 획득 (accuracy 5: 도시정도까지 정확도로 위치 가져옴)
+    const {
+      coords: { latitude, longitude },
+    } = await Location.getCurrentPositionAsync({ accuracy: 5 });
+    const location = await Location.reverseGeocodeAsync(
+      { latitude, longitude },
+      { useGoogleMaps: false }
+    );
 
-    console.log(location)
-    console.log(location[0].city ?? location[0].region);
-
-    setLocation(location[0].city ?? location[0].region);
+    setCity(location[0]?.city ?? location[0].region);
+    
+    // 날씨 가져오기
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/onecall?lat=${latitude}&lon=${longitude}&exclude=alerts&appid=${OPEN_WEATHER_API_KEY}&units=metric`
+    );
+    const json = await response.json();
+    
+    setDays(json.daily);
   };
 
   useEffect(() => {
-    ask();
+    getWeather();
   }, []);
-
+  
   return (
-    /**
-     * @see https://reactnative.dev/docs/next/scrollview
-     */
     <View style={styles.container}>
       <View style={styles.city}>
-        <Text style={styles.cityName}>{location}</Text>
+        <Text style={styles.cityName}>{city}</Text>
       </View>
       <ScrollView
-        horizontal
-        contentContainerStyle={styles.weather}
         pagingEnabled
+        horizontal
         showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.weather}
       >
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
-        <View style={styles.day}>
-          <Text style={styles.temperature}>27</Text>
-          <Text style={styles.description}>Sunny</Text>
-        </View>
+        {days?.length === 0 ? (
+          <View style={styles.day}>
+            <ActivityIndicator
+              color="white"
+              style={{ marginTop: 10 }}
+              size="large"
+            />
+          </View>
+        ) : (
+          days?.map((day, index) => (
+            <View key={index} style={styles.day}>
+              <Text style={styles.temp}>
+                {parseFloat(day.temp.day).toFixed(1)}
+              </Text>
+              <Text style={styles.description}>{day.weather[0].main}</Text>
+              <Text style={styles.tinyText}>{day.weather[0].description}</Text>
+            </View>
+          ))
+        )}
       </ScrollView>
     </View>
   );
@@ -88,29 +85,32 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'tomato',
+    backgroundColor: "tomato",
   },
   city: {
     flex: 1.2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cityName: {
     fontSize: 58,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   weather: {},
   day: {
     width: SCREEN_WIDTH,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  temperature: {
+  temp: {
     marginTop: 50,
+    fontWeight: "600",
     fontSize: 178,
-    fontWeight: '600',
   },
   description: {
     marginTop: -30,
     fontSize: 60,
+  },
+  tinyText: {
+    fontSize: 20,
   },
 });
